@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"gopkg.in/ini.v1"
 )
@@ -17,22 +18,28 @@ func main() {
 
 	re := regexp.MustCompile("^profile (.*)")
 	for _, e := range cfg.Sections() {
-		fmt.Printf("----\n")
 		f := re.FindAllStringSubmatch(e.Name(), -1)
 		if len(f) == 0 {
 			continue
 		}
 
-		name := f[0][1] // [profile name]
-		fmt.Printf("%v\n", name)
-		//for _, k := range e.Keys() {
-		//	fmt.Printf("%v\n", k.Name())
-		//}
+		profileName := f[0][1] // [profile name]
 		k, err := e.GetKey("role_arn")
 		if err != nil {
-			//log.Fatalf("%v", err)
 			continue
 		}
-		fmt.Printf("%v\n", k)
+
+		a := strings.Split(k.String(), "/")
+		roleName := a[1]
+		a = strings.Split(a[0], ":")
+		accountId := a[4]
+
+		l := "https://signin.aws.amazon.com/switchrole?roleName=" + roleName +
+			"&account=" + accountId +
+			"&displayName=" + profileName
+
+		fmt.Printf("# %v\n", profileName)
+		fmt.Printf("%v\n", l)
+		fmt.Printf("\n")
 	}
 }
