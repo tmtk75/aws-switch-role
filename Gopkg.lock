@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/Atrox/homedir"
+  packages = ["."]
+  revision = "06c445c1ff71259ff8653dd17941b062b4c7f457"
+  version = "v1.0.0"
+
+[[projects]]
   name = "gopkg.in/ini.v1"
   packages = ["."]
   revision = "06f5f3d67269ccec1fe5fe4134ba6e982984f7f5"
@@ -10,6 +16,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "81b368a60c7d4e4bba008091bafbe0e972412dc24fc2fe56dedfe927d9104035"
+  inputs-digest = "fbf0637aaf164e308db8ff78b7f076c85fd47d88dde580058d92d1ba154b2cc3"
   solver-name = "gps-cdcl"
   solver-version = 1

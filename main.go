@@ -2,20 +2,34 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
+	"text/tabwriter"
 
+	"github.com/Atrox/homedir"
 	"gopkg.in/ini.v1"
 )
 
+type Link struct {
+	ProfileName string
+	Href        string
+}
+
 func main() {
-	cfg, err := ini.Load("/Users/tsakuma/.aws/config")
+	home, err := homedir.Dir()
+	if err != nil {
+		log.Fatalf("%v\n", err)
+	}
+
+	cfg, err := ini.Load(home + "/.aws/config")
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
 		os.Exit(1)
 	}
 
+	links := make([]*Link, 0)
 	re := regexp.MustCompile("^profile (.*)")
 	for _, e := range cfg.Sections() {
 		f := re.FindAllStringSubmatch(e.Name(), -1)
@@ -38,8 +52,19 @@ func main() {
 			"&account=" + accountId +
 			"&displayName=" + profileName
 
-		fmt.Printf("# %v\n", profileName)
-		fmt.Printf("%v\n", l)
-		fmt.Printf("\n")
+		links = append(links, &Link{ProfileName: profileName, Href: l})
+	}
+
+	max := 0
+	for _, l := range links {
+		if max < len(l.ProfileName) {
+			max = len(l.ProfileName)
+		}
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, max+2, 2, 0, ' ', tabwriter.TabIndent)
+	for _, l := range links {
+		fmt.Fprintf(w, "%v\t%v\n", l.ProfileName, l.Href)
+		w.Flush()
 	}
 }
