@@ -18,19 +18,49 @@ type Link struct {
 }
 
 func main() {
+	// Parse
+	cfg := ParseFile("/.aws/config", "^profile (.*)")
+	creds := ParseFile("/.aws/credentials", "(.*)")
+
+	// Merge
+	links := make([]*Link, 0)
+	for _, e := range cfg {
+		links = append(links, e)
+	}
+	for _, e := range creds {
+		links = append(links, e)
+	}
+
+	// Find max
+	max := 0
+	for _, l := range links {
+		if max < len(l.ProfileName) {
+			max = len(l.ProfileName)
+		}
+	}
+
+	// Print
+	w := tabwriter.NewWriter(os.Stdout, max+2, 2, 0, ' ', tabwriter.TabIndent)
+	for _, l := range links {
+		fmt.Fprintf(w, "%v\t%v\n", l.ProfileName, l.Href)
+		w.Flush()
+	}
+}
+
+func ParseFile(path, sectionpattern string) []*Link {
 	home, err := homedir.Dir()
 	if err != nil {
 		log.Fatalf("%v\n", err)
 	}
 
-	cfg, err := ini.Load(home + "/.aws/config")
+	cfg, err := ini.Load(home + path)
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
 		os.Exit(1)
 	}
 
 	links := make([]*Link, 0)
-	re := regexp.MustCompile("^profile (.*)")
+	re := regexp.MustCompile(sectionpattern)
 	for _, e := range cfg.Sections() {
 		f := re.FindAllStringSubmatch(e.Name(), -1)
 		if len(f) == 0 {
@@ -55,16 +85,5 @@ func main() {
 		links = append(links, &Link{ProfileName: profileName, Href: l})
 	}
 
-	max := 0
-	for _, l := range links {
-		if max < len(l.ProfileName) {
-			max = len(l.ProfileName)
-		}
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, max+2, 2, 0, ' ', tabwriter.TabIndent)
-	for _, l := range links {
-		fmt.Fprintf(w, "%v\t%v\n", l.ProfileName, l.Href)
-		w.Flush()
-	}
+	return links
 }
