@@ -12,10 +12,9 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-type Link struct {
-	ProfileName string
-	Href        string
-}
+type ProfileName string
+type URL string
+type Links map[ProfileName]URL
 
 func main() {
 	// Parse
@@ -23,31 +22,31 @@ func main() {
 	creds := ParseFile("/.aws/credentials", "(.*)")
 
 	// Merge
-	links := make([]*Link, 0)
-	for _, e := range cfg {
-		links = append(links, e)
+	links := make(Links)
+	for k, e := range *cfg {
+		links[k] = e
 	}
-	for _, e := range creds {
-		links = append(links, e)
+	for k, e := range *creds {
+		links[k] = e
 	}
 
-	// Find max
+	// Find max length
 	max := 0
-	for _, l := range links {
-		if max < len(l.ProfileName) {
-			max = len(l.ProfileName)
+	for k := range links {
+		if max < len(k) {
+			max = len(k)
 		}
 	}
 
 	// Print
 	w := tabwriter.NewWriter(os.Stdout, max+2, 2, 0, ' ', tabwriter.TabIndent)
-	for _, l := range links {
-		fmt.Fprintf(w, "%v\t%v\n", l.ProfileName, l.Href)
+	for k, l := range links {
+		fmt.Fprintf(w, "%v\t%v\n", k, l)
 		w.Flush()
 	}
 }
 
-func ParseFile(path, sectionpattern string) []*Link {
+func ParseFile(path, sectionpattern string) *Links {
 	home, err := homedir.Dir()
 	if err != nil {
 		log.Fatalf("%v\n", err)
@@ -59,7 +58,7 @@ func ParseFile(path, sectionpattern string) []*Link {
 		os.Exit(1)
 	}
 
-	links := make([]*Link, 0)
+	links := make(Links)
 	re := regexp.MustCompile(sectionpattern)
 	for _, e := range cfg.Sections() {
 		f := re.FindAllStringSubmatch(e.Name(), -1)
@@ -78,12 +77,12 @@ func ParseFile(path, sectionpattern string) []*Link {
 		a = strings.Split(a[0], ":")
 		accountId := a[4]
 
-		l := "https://signin.aws.amazon.com/switchrole?roleName=" + roleName +
+		url := "https://signin.aws.amazon.com/switchrole?roleName=" + roleName +
 			"&account=" + accountId +
 			"&displayName=" + profileName
 
-		links = append(links, &Link{ProfileName: profileName, Href: l})
+		links[ProfileName(profileName)] = URL(url)
 	}
 
-	return links
+	return &links
 }
